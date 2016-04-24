@@ -39,13 +39,9 @@ class RouterMiddleware extends Container
     {
         // Get route
         $route = $this->matcher->match($request);
-
         if (!$route) {
             throw new \Exception('Not found', 404);
         }
-
-        /** @var callable $callable */
-        $callable = $route->handler;
 
         // Store attributes
         foreach ($route->attributes as $key => $val) {
@@ -53,9 +49,7 @@ class RouterMiddleware extends Container
         }
 
         // Invoke with response and route attributes
-        return $this->invoke($callable, array_merge([
-            'Psr\Http\Message\ResponseInterface' => $next($request, $response),
-            'Psr\Http\Message\ServerRequestInterface' => $request,
-        ], $route->attributes));
+        $middleware = $route->handler;
+        return $middleware($request, $response, $next);
     }
 }

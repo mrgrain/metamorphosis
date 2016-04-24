@@ -115,7 +115,7 @@ class WebApplication extends Container implements GroupHuggable
 
         // Create final middleware
         if (is_null($next)) {
-            $next = function (RequestInterface $request, ResponseInterface $response) {
+            $next = function (ServerRequestInterface $request, ResponseInterface $response) {
                 return $response;
             };
         }
