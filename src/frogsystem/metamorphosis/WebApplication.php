@@ -6,6 +6,7 @@ use Frogsystem\Metamorphosis\Constrains\GroupHugTrait;
 use Frogsystem\Metamorphosis\Constrains\HuggableTrait;
 use Frogsystem\Metamorphosis\Contracts\GroupHuggable;
 use Frogsystem\Metamorphosis\Middleware\RouterMiddleware;
+use Frogsystem\Metamorphosis\Middleware\Stack;
 use Frogsystem\Metamorphosis\Providers\ConfigServiceProvider;
 use Frogsystem\Metamorphosis\Providers\HttpServiceProvider;
 use Frogsystem\Metamorphosis\Providers\RouterServiceProvider;
@@ -38,9 +39,10 @@ class WebApplication extends Container implements GroupHuggable
         ConfigServiceProvider::class,
     ];
 
-    protected $middleware = [
-        RouterMiddleware::class
-    ];
+    /**
+     * @var array|Stack
+     */
+    protected $middleware;
 
     /**
      * @param ContainerInterface $delegate
@@ -54,13 +56,45 @@ class WebApplication extends Container implements GroupHuggable
         $this->set(self::class, $this);
         $this->set(get_called_class(), $this);
 
+        // middleware
+        $this->middleware = new Stack();
+
         // set emitter
         $this->emitter = $this->factory(SapiEmitter::class);
 
+        // hugging
         $this->huggables = $this->load($this->huggables);
         $this->groupHug($this->huggables);
     }
 
+    /**
+     * @param $middleware
+     * @return $this
+     */
+    public function add($middleware)
+    {
+        // wrap middleware with custom functionality
+        $this->middleware->push(function (ServerRequestInterface $request, ResponseInterface $response, $next) use ($middleware) {
+            // store current request to container
+            $this->request = $request;
+
+            // Make the middleware if necessary
+            if (is_string($middleware)) {
+                $middleware = $this->make($middleware);
+            }
+
+            // run middleware
+            return $middleware($request, $response, $next);
+        });
+        return $this;
+    }
+
+    /**
+     * @param $huggables
+     * @return mixed
+     * @deprecated
+     * @throws \Frogsystem\Spawn\Exceptions\InvalidArgumentException
+     */
     protected function load($huggables)
     {
         // Connect Huggables
@@ -93,53 +127,30 @@ class WebApplication extends Container implements GroupHuggable
             $response = $this->get(ResponseInterface::class);
         }
 
-        // Application is called as a regular middleware, continue with stack
-        if (!is_null($next)) {
-            return $this->handle($request, $response, $next);
-        }
+        // wrap middleware into exception terminator
+        $wrapper = function (ServerRequestInterface $request, ResponseInterface $response, $next) {
+            // Try to run through the stack, catch any exceptions
+            try {
+                return $this->middleware->__invoke($request, $response, $next);
+            } catch (Exception $exception) {
+                return $this->terminate($request, $response, $exception);
+            }
+        };
 
-        // Nothing left to do, emit the response
-        return $this->emitter->emit($this->handle($request, $response));
-    }
 
-    /**
-     * @param ServerRequestInterface $request
-     * @param ResponseInterface $response
-     * @param Callable $next
-     * @return ResponseInterface
-     */
-    protected function handle(ServerRequestInterface $request, ResponseInterface $response, $next = null)
-    {
-        // Store latest request to container
-        $this->request = $request;
-
-        // Create final middleware
         if (is_null($next)) {
             $next = function (ServerRequestInterface $request, ResponseInterface $response) {
                 return $response;
             };
-        }
-        
-        // Try to run through the stack, catch any errors
-        try {
-            /** @var callable $middleware The next middleware. */
-            if ($middleware = array_pop($this->middleware)) {
-                // Make the middleware
-                if (is_string($middleware)) {
-                    $middleware = $this->make($middleware);
-                }
 
-                // Run the next Middleware
-                return $middleware($request, $response, function (ServerRequestInterface $request, ResponseInterface $response) use ($next) {
-                    return $this->handle($request, $response, $next);
-                });
-            }
-
-            return $next($request, $response);
-            
-        } catch (Exception $exception) {
-            return $this->terminate($request, $response, $exception);
+            // Nothing left to do, emit the response
+            $wrapper = function (ServerRequestInterface $request, ResponseInterface $response, $next) use ($wrapper) {
+                return $this->emitter->emit($wrapper($request, $response, $next));
+            };
         }
+
+        // Application is called as a regular middleware, continue with stack
+        return $wrapper($request, $response, $next);
     }
 
     /**

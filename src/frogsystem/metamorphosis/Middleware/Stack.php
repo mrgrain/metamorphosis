@@ -1,6 +1,7 @@
 <?php
 namespace Frogsystem\Metamorphosis\Middleware;
 
+use Frogsystem\Metamorphosis\Contracts\MiddlewareStack;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use SplStack;
@@ -9,7 +10,7 @@ use SplStack;
  * Class Stack
  * @package Frogsystem\Metamorphosis\Middleware
  */
-class Stack extends SplStack
+class Stack extends SplStack implements MiddlewareStack
 {
     /**
      * Build a middleware stack from any number for arguments.
