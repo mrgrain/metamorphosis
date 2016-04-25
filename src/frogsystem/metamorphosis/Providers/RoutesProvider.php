@@ -51,7 +51,7 @@ abstract class RoutesProvider implements Huggable
             if (!is_null($method)) {
                 $controller = [$this->app->make($controller), $method];
             }
-        
+
             return $this->app->invoke($controller, array_merge([
                 'Psr\Http\Message\ResponseInterface' => $next($request, $response),
                 'Psr\Http\Message\ServerRequestInterface' => $request,

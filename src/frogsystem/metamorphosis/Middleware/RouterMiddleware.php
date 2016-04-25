@@ -2,8 +2,6 @@
 namespace Frogsystem\Metamorphosis\Middleware;
 
 use Aura\Router\Matcher;
-use Frogsystem\Spawn\Container;
-use Interop\Container\ContainerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -11,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
  * Class RouterMiddleware
  * @package Frogsystem\Metamorphosis\Middleware
  */
-class RouterMiddleware extends Container
+class RouterMiddleware
 {
     /**
      * @var Matcher The route matcher.
@@ -19,12 +17,10 @@ class RouterMiddleware extends Container
     protected $matcher;
 
     /**
-     * @param ContainerInterface $delegate
      * @param Matcher $matcher
      */
-    public function __construct(ContainerInterface $delegate, Matcher $matcher)
+    public function __construct(Matcher $matcher)
     {
-        parent::__construct($delegate);
         $this->matcher = $matcher;
     }
 
