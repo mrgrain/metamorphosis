@@ -26,10 +26,10 @@ class Stack extends SplStack implements MiddlewareStack
      * Process the middleware stack
      * @param ServerRequestInterface $request
      * @param ResponseInterface $response
-     * @param callable $next
+     * @param mixed $next
      * @return ResponseInterface
      */
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, callable $next)
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next)
     {
         /** @var callable $middleware The next middleware. */
         if (!$this->isEmpty()) {

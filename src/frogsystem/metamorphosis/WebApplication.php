@@ -5,14 +5,13 @@ use Exception;
 use Frogsystem\Metamorphosis\Constrains\GroupHugTrait;
 use Frogsystem\Metamorphosis\Constrains\HuggableTrait;
 use Frogsystem\Metamorphosis\Contracts\GroupHuggable;
-use Frogsystem\Metamorphosis\Middleware\RouterMiddleware;
+use Frogsystem\Metamorphosis\Contracts\MiddlewareStack;
 use Frogsystem\Metamorphosis\Middleware\Stack;
 use Frogsystem\Metamorphosis\Providers\ConfigServiceProvider;
 use Frogsystem\Metamorphosis\Providers\HttpServiceProvider;
 use Frogsystem\Metamorphosis\Providers\RouterServiceProvider;
 use Frogsystem\Spawn\Container;
 use Interop\Container\ContainerInterface;
-use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Diactoros\Response\EmitterInterface;
@@ -25,7 +24,7 @@ use Zend\Diactoros\Response\SapiEmitter;
  * @property EmitterInterface emitter
  * @package Frogsystem\Metamorphosis
  */
-class WebApplication extends Container implements GroupHuggable
+class WebApplication extends Container implements GroupHuggable, MiddlewareStack
 {
     use HuggableTrait;
     use GroupHugTrait;
@@ -71,7 +70,7 @@ class WebApplication extends Container implements GroupHuggable
      * @param $middleware
      * @return $this
      */
-    public function add($middleware)
+    public function push($middleware)
     {
         // wrap middleware with custom functionality
         $this->middleware->push(function (ServerRequestInterface $request, ResponseInterface $response, $next) use ($middleware) {

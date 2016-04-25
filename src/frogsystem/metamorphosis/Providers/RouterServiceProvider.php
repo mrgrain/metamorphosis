@@ -4,6 +4,7 @@ namespace Frogsystem\Metamorphosis\Providers;
 use Aura\Router\Map;
 use Aura\Router\RouterContainer;
 use Aura\Router\Rule\RuleIterator;
+use Frogsystem\Metamorphosis\Contracts\MiddlewareStack;
 use Frogsystem\Metamorphosis\Middleware\RouterMiddleware;
 use Frogsystem\Metamorphosis\WebApplication;
 use Frogsystem\Spawn\Container;
@@ -25,8 +26,8 @@ class RouterServiceProvider extends ServiceProvider
         $app[RuleIterator::class] = $routerContainer->getRuleIterator();
 
         // If huggable is a container
-        if ($app instanceof WebApplication) {
-            $app->add(RouterMiddleware::class);
+        if ($app instanceof MiddlewareStack) {
+            $app->push(RouterMiddleware::class);
         }
     }
 }
